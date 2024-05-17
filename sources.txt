@@ -1,0 +1,4 @@
+main source:
+https://www.codingthepast.com/2023/04/26/Text-Mining-in-Python.html
+
+https://github.com/Wittline/tf-idf
