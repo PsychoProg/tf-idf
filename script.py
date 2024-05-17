@@ -1,82 +1,120 @@
-from itertools import islice
-from nltk.tokenize import word_tokenize
+import nltk
+from nltk import word_tokenize
 from nltk.corpus import stopwords
-import pandas as pd
-import matplotlib.pyplot as plt
-
-"""
->>> import nltk
->>> nltk.download('punkt')
->>> nltk.download('stopwords')
-"""
-
-def load_doc(filename):
-    my_text = list()
-    with open(filename, encoding= "utf-8") as f:
-        for line in islice(f, 0, None):
-            my_text.append(line)
-            
-    my_text = [word_tokenize(sentence) for sentence in my_text]
-    flat_list = [item for sublist in my_text for item in sublist]
-    # print(len(flat_list)) # 463455
-    return flat_list
+import math
+import json 
+from collections import Counter
+from collections import defaultdict
 
 
-def prepare_text(list_of_words):
-  #load stopwords:
-  stops = stopwords.words('english')
-  #transform all word characters to lower case:
-  list_of_words = [word.lower() for word in list_of_words]
-  #remove all words containing up to two characters:
-  list_of_words = [word for word in list_of_words if len(word)>2]
-  #remove stopwords:
-  list_of_words = [word for word in list_of_words if word not in stops]
-  
-#   print(list_of_words)
-#   print("\n","*"*100,"\n")
-#   print(len(list_of_words)) # 257693
-  
-  return list_of_words
+# nltk.download('stopwords')
+# print(stopwords.words('english'))
+
+def parse_documents(file_path):
+  documents = []
+  current_doc = {}
+  current_key = None
+  doc_id = 0  # Initialize document ID counter
+
+  with open(file_path, 'r') as f:
+    for line in f:
+      line = line.strip()  # Remove leading/trailing whitespace
+
+      if line.startswith(".I"):
+        # New document
+        if current_doc:
+          documents.append(current_doc)
+        current_doc = {}
+        doc_id += 1  # Increment document ID counter
+        current_key = "id"
+        current_doc["id"] = doc_id  # Assign ID to document
+      elif line.startswith(".T"):
+        current_key = "title"
+      elif line.startswith(".A"):
+        current_key = "author"
+      elif line.startswith(".W"):
+        current_key = "content"
+      elif current_key:
+        # Append content to existing key
+        current_doc.setdefault(current_key, []).append(line.strip())  # Handle multi-line content
+
+  # Add the last document
+  if current_doc:
+    documents.append(current_doc)
+
+  return documents
 
 
-def count_freq(my_list):
-    unique_words = []
-    counts = []
-    # create a list of unique words:
-    for item in my_list:
-      if item not in unique_words: 
-        unique_words.append(item)
-    # count the frequency of each word:
-    for word in unique_words:
-      count = 0
-      for i in my_list:
-        if word == i:
-          count += 1
-      counts.append(count)
-      
-    df = pd.DataFrame({"word": unique_words, "count": counts})
-    df.sort_values(by="count", inplace = True, ascending = False)
-    df.reset_index(drop=True, inplace = True)
-    return df
+
+# Set your file path
+file_path = "mini.CISI.doc.txt"
+
+# Parse the documents
+documents = parse_documents(file_path)
+# print(documents)
+# print(type(documents))
+# Access first document data
+
+# first_doc_id = documents[0]["id"]
+# first_doc_title = documents[0]["title"]
+# first_doc_content = " ".join(documents[0]["content"])  # Join content lines
 
 
-# FILENAME = "./CISI.ALL.txt"
-FILENAME = "modified_file.txt"
+stop_words = set(stopwords.words('english'))
 
-cisi_text = load_doc(FILENAME)
-prepare_cisi = prepare_text(cisi_text)
-cisi_df = count_freq(prepare_cisi)
+result_document = []
+for doc in documents:
+  doc_id = doc["id"]
+  # title
+  # author
+  content = doc["content"]
+  content_tokens = [word.lower() for word in word_tokenize(" ".join(content))]
+  filtered_tokens = [w for w in content_tokens if not w.lower() in stop_words]
+  clean_text = ' '.join(filtered_tokens)
+  # print(clean_text)
+  result_document.append(clean_text)
+
+# print(result_document)
 
 
-cisi_df["TF"] = cisi_df["count"]/sum(cisi_df["count"])
-print(cisi_df["TF"])
 
+def calculate_tf_idf(documents):
+    # Step 1: Calculate Term Frequency (TF)
+    tf = []
+    for doc in documents:
+        doc_tf = defaultdict(int)
+        words = doc.split()
+        word_count = len(words)
+        for word in words:
+            doc_tf[word] += 1
+        tf.append(doc_tf)
 
-#left join all dataframes:
-# thacher_otis = thacher_df[["word", "TF"]].merge(
-#     otis_df[["word", "TF"]], 
-#     on = "word", 
-#     how = "outer", 
-#     suffixes = ("_thacher", "_otis")).fillna(0)
+    # Step 2: Calculate Inverse Document Frequency (IDF)
+    doc_count = len(documents)
+    idf = defaultdict(float)
+    for doc_tf in tf:
+        for word in doc_tf.keys():
+            idf[word] += 1
+
+    for word in idf.keys():
+        idf[word] = math.log(doc_count / idf[word])
+
+    # Step 3: Calculate TF-IDF
+    tf_idf = []
+    for i, doc_tf in enumerate(tf):
+        doc_tfidf = {}
+        for word in doc_tf.keys():
+            doc_tfidf[word] = doc_tf[word] * idf[word]
+        tf_idf.append(doc_tfidf)
+
+    return tf_idf
+
+# Example Usage
+result = calculate_tf_idf(result_document)
+for i, document in enumerate(result):
+    print(f"TF-IDF for Document {i + 1}: {document}")
+
+# with open("fruits.txt", "w") as f:
+#   f.write(str(mylist))
 
 

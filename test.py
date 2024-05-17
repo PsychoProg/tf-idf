@@ -22,7 +22,39 @@ documents = [
 ]
 
 # Process documents and get the new list
-processed_documents = process_documents(documents)
+# processed_documents = process_documents(documents)
+
+# Print the processed document list (optional)
+# print(processed_documents)
+
+""" ======================================= """
+
+
+
+
+def calculate_tf(documents):
+  processed_documents = []
+  for doc in documents:
+    doc_id = doc["id"]
+    title_tokens = doc["title_tokens"]
+    tf = {}
+    for token in title_tokens:
+      tf[token] = tf.get(token, 0) + 1  # Count term frequency
+    total_terms = len(title_tokens)
+    for token, count in tf.items():
+      tf[token] = count / total_terms  # Calculate TF
+    processed_documents.append({"id": doc_id, "tf": tf})
+  return processed_documents
+
+# Your existing list of documents
+documents = [
+  {'id': 1, 'title_tokens': ['18', 'editions', 'dewey', 'decimal', 'classifications']},
+  {'id': 2, 'title_tokens': ['use', 'made', 'technical', 'libraries']},
+]
+
+# Calculate TF and get the processed list
+processed_documents = calculate_tf(documents)
 
 # Print the processed document list (optional)
 print(processed_documents)
+
