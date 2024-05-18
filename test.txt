@@ -1,8 +1,0 @@
-. Preprocessing text data in Python
-
-
-We will be using the same functions from the lesson Visualizing Text Data to preprocess the text data. The functions are:
-
-load_text: loads the text from a txt file and returns a list of words;
-prepare_text: preprocesses the text by removing stopwords, removing words with less than 3 characters, and transforming all words to lower case;
-count_freq: counts the frequency of each word in the the document and returns a dataframe with the results.
